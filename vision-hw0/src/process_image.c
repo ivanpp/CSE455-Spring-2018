@@ -38,28 +38,31 @@ image rgb_to_grayscale(image im)
     assert(im.c == 3);
     image gray = make_image(im.w, im.h, 1);
     // TODO Fill this in
-    int c, h, w;
+    int i, j;
     float scale[] = {0.299, 0.587, 0.114};
-    for (c = 0; c < im.c; ++c){
-      for (h = 0; h < im.h; ++h){
-        for (w = 0; w < im.w; ++w){
-          gray.data[im.w*h+w] += scale[c] * im.data[c*im.h*im.w+h*im.w+w];
-        }
+    for (i = 0; i < im.c; ++i){
+      for (j = 0; j < im.h*im.w; ++j){
+        gray.data[j] += scale[i] * im.data[i*im.h*im.w+j];
       }
     }
     return gray;
 }
 
+void scale_image(image im, int c, float v)
+{
+    int i;
+    for (i = 0; i < im.h*im.w; ++i){
+      im.data[c*im.h*im.w+i] *= v;
+    }
+}
+
 void shift_image(image im, int c, float v)
 {
     // TODO Fill this in
-    int h, w;
-    for (h = 0; h < im.h; ++h){
-      for (w = 0; w < im.w; ++w){
-        im.data[c*im.h*im.w + h*im.w + w] += v;
-      }
+    int i;
+    for (i = 0; i < im.h*im.w; ++i){
+      im.data[c*im.h*im.w+i] += v;
     }
-
 }
 
 void clamp_image(image im)
@@ -157,4 +160,114 @@ void hsv_to_rgb(image im)
       im.data[i + im.h*im.w] = g;
       im.data[i + 2*im.h*im.w] = b;
     }
+}
+
+void rgb_to_hcl(image im)
+{
+    assert(im.c == 3);
+    int i, j, k;
+    image rgb = make_image(im.w, im.h, im.c);
+    image xyz = make_image(im.w, im.h, im.c);
+    image luv = make_image(im.w, im.h, im.c);
+    // sRGB -> RGB (gamma decompression)
+    for (i = 0; i < im.c*im.h*im.w; ++i){
+      rgb.data[i] = im.data[i] > 0.04045 ? powf((im.data[i]+0.055)/1.055, 2.4) :
+                                           im.data[i] / 12.92;
+    }
+    // RGB -> XYZ
+    float scale[3][3] = {{0.4124, 0.3576, 0.1805},
+                         {0.2126, 0.7152, 0.0722},
+                         {0.0193, 0.1192, 0.9505}};
+    for (i = 0; i < im.c; ++i){
+      for (j = 0; j < im.c; ++j){
+        for (k = 0; k < im.h*im.w; ++k){
+          xyz.data[i*im.h*im.w+k] += scale[i][j] * rgb.data[j*im.h*im.w+k];
+        }
+      }
+    }
+    // XYZ -> Luv
+    float un = 0.2009, vn = 0.4610, yn = 1.0;  // D65 white point
+    for (i = 0; i < im.h*im.w; ++i){
+      float yr = xyz.data[im.h*im.w+i] / yn;
+      if (yr > powf(6.0/29, 3)){
+        luv.data[i] = 116 * powf(yr, 1.0/3) - 16;
+      } else{
+        luv.data[i] = powf(29.0/3, 3) * yr;
+      }
+      float den = xyz.data[i] + 15*xyz.data[im.h*im.w+i] + 3*xyz.data[2*im.h*im.w+i];
+      float u = 4 * xyz.data[i] / den;
+      float v = 9 * xyz.data[im.h*im.w+i] / den;
+      luv.data[im.h*im.w+i] = 13 * luv.data[i] * (u-un);
+      luv.data[2*im.h*im.w+i] = 13 * luv.data[i] * (v-vn);
+    }
+    // Luv -> HCL
+    for (i = 0; i < im.h*im.w; ++i){
+      float u = luv.data[im.h*im.w+i];
+      float v = luv.data[2*im.h*im.w+i];
+      im.data[i] = atan2f(v, u);
+      im.data[im.h*im.w+i] = sqrtf(u*u + v*v);
+    }
+    memcpy(im.data+2*im.h*im.w, luv.data, im.h*im.w*sizeof(float));
+    free_image(rgb);
+    free_image(xyz);
+    free_image(luv);
+}
+
+void hcl_to_rgb(image im)
+{
+    assert(im.c == 3);
+    int i, j, k;
+    image luv = make_image(im.w, im.h, im.c);
+    image xyz = make_image(im.w, im.h, im.c);
+    image rgb = make_image(im.w, im.h, im.c);
+    // HCL -> Luv
+    for (i = 0; i < im.h*im.w; ++i){
+      float h = im.data[i];
+      float c = im.data[im.h*im.w+i];
+      luv.data[im.h*im.w+i] = cosf(h) * c;
+      luv.data[2*im.h*im.w+i] = sinf(h) * c;
+    }
+    memcpy(luv.data, im.data+2*im.h*im.w, im.h*im.w*sizeof(float));
+    // Luv -> XYZ
+    float un = 0.2009, vn = 0.4610, yn = 1.0;  // D65 white point
+    for (i = 0; i < im.h*im.w; ++i){
+      float u, v;
+      if (!luv.data[i]){
+        xyz.data[i] = 0.0;
+        xyz.data[im.h*im.w+i] = 0.0;
+        xyz.data[2*im.h*im.w+i] = 0.0;
+        continue;
+      }
+      u = luv.data[im.h*im.w+i] / (13*luv.data[i]) + un;
+      v = luv.data[2*im.h*im.w+i] / (13*luv.data[i]) + vn;
+      if (luv.data[i] > 8){
+        xyz.data[im.h*im.w+i] = yn * powf((luv.data[i]+16)/116, 3);
+      } else{
+        xyz.data[im.h*im.w+i] = yn * luv.data[i] * powf(3.0/29, 3);
+      }
+      xyz.data[i] = (9.0/4) * xyz.data[im.h*im.w+i] * u / v;
+      xyz.data[2*im.h*im.w+i] = xyz.data[im.h*im.w+i] * (12-3*u-20*v) / (4*v);
+    }
+    // XYZ -> RGB
+    float scale[3][3] = {{ 3.2406, -1.5372, -0.4986},
+                         {-0.9689,  1.8758,  0.0415},
+                         { 0.0557, -0.2040,  1.0570}};
+    for (i = 0; i < im.c; ++i){
+      for (j = 0; j < im.c; ++j){
+        for (k = 0; k < im.h*im.w; ++k){
+          rgb.data[i*im.h*im.w+k] += scale[i][j] * xyz.data[j*im.h*im.w+k];
+        }
+      }
+    }
+    // RGB -> sRGB
+    for (i = 0; i < im.c*im.h*im.w; ++i){
+      if (rgb.data[i] > 0.0031308){
+        im.data[i] = (1+0.055) * powf(rgb.data[i], 1.0/2.4) - 0.055;
+      } else{
+        im.data[i] = 12.92 * rgb.data[i];
+      }
+    }
+    free_image(luv);
+    free_image(xyz);
+    free_image(rgb);
 }

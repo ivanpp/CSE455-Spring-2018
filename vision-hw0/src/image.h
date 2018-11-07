@@ -14,6 +14,9 @@ image copy_image(image im);
 image rgb_to_grayscale(image im);
 void rgb_to_hsv(image im);
 void hsv_to_rgb(image im);
+void rgb_to_hcl(image im);
+void hcl_to_rgb(image im);
+void scale_image(image im, int c, float v);
 void shift_image(image im, int c, float v);
 void clamp_image(image im);
 
@@ -25,4 +28,3 @@ void save_image(image im, const char *name);
 void free_image(image im);
 
 #endif
-
