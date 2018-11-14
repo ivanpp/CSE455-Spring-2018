@@ -146,6 +146,19 @@ convolve_image.restype = IMAGE
 
 
 if __name__ == "__main__":
+    # colorize sobel
     im = load_image("data/dog.jpg")
-    save_image(im, "hey")
+    colorized = colorize_sobel(im)
+    save_image(colorized, "sobel")
+    # hybrid image
+    ron = load_image("data/ron.png")
+    dum = load_image("data/dumbledore.png")
+    fron = make_gaussian_filter(6)
+    fdum = make_gaussian_filter(8)
+    lron = convolve_image(ron, fron, 1)
+    hron = sub_image(ron, lron)
+    ldum = convolve_image(dum, fdum, 1)
+    ronbledore = add_image(hron, ldum)
+    clamp_image(ronbledore)
+    save_image(ronbledore, "ronbledore")
 

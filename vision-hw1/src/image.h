@@ -16,6 +16,8 @@ image rgb_to_grayscale(image im);
 image grayscale_to_rgb(image im, float r, float g, float b);
 void rgb_to_hsv(image im);
 void hsv_to_rgb(image im);
+void rgb_to_hcl(image im);
+void hcl_to_rgb(image im);
 void shift_image(image im, int c, float v);
 void scale_image(image im, int c, float v);
 void clamp_image(image im);
@@ -52,4 +54,3 @@ image *sobel_image(image im);
 image colorize_sobel(image im);
 
 #endif
-
