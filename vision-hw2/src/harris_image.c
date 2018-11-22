@@ -84,7 +84,16 @@ void mark_corners(image im, descriptor *d, int n)
 image make_1d_gaussian(float sigma)
 {
     // TODO: optional, make separable 1d Gaussian.
-    return make_image(1,1,1);
+    int i, offset;
+    int w = 6 * sigma;
+    w = (w > 0) ? ((w % 2 == 1) ? w : w + 1) : 1;
+    offset = w / 2;
+    image gaussian_filter = make_image(1, w, 1);
+    for (i = 0 - offset; i < w - offset; ++i){
+      float v = 1 / sqrt((TWOPI*sigma*sigma)) * exp((-i*i) / (2*sigma*sigma));
+      set_pixel(gaussian_filter, 0, i + offset, 0, v);
+    }
+    return gaussian_filter;
 }
 
 // Smooths an image using separable Gaussian filter.
@@ -93,7 +102,7 @@ image make_1d_gaussian(float sigma)
 // returns: smoothed image.
 image smooth_image(image im, float sigma)
 {
-    if(1){
+    if(0){
         image g = make_gaussian_filter(sigma);
         image s = convolve_image(im, g, 1);
         free_image(g);
@@ -101,7 +110,14 @@ image smooth_image(image im, float sigma)
     } else {
         // TODO: optional, use two convolutions with 1d gaussian filter.
         // If you implement, disable the above if check.
-        return copy_image(im);
+        image g = make_1d_gaussian(sigma);
+        image s0 = convolve_image(im, g, 1);
+        g.w = g.h;
+        g.h = 1;
+        image s1 = convolve_image(s0, g, 1);
+        free_image(g);
+        free_image(s0);
+        return s1;
     }
 }
 
@@ -114,6 +130,23 @@ image structure_matrix(image im, float sigma)
 {
     image S = make_image(im.w, im.h, 3);
     // TODO: calculate structure matrix for im.
+    int i;
+    image D = make_image(im.w, im.h, 3);
+    image gx_filter = make_gx_filter();
+    image gy_filter = make_gy_filter();
+    image gx = convolve_image(im, gx_filter, 0);
+    image gy = convolve_image(im, gy_filter, 0);
+    for (i = 0; i < im.h*im.w; ++i){
+      D.data[i] = gx.data[i] * gx.data[i];
+      D.data[i+im.h*im.w] = gy.data[i] * gy.data[i];
+      D.data[i+2*im.h*im.w] = gx.data[i] *gy.data[i];
+    }
+    S = smooth_image(D, sigma);
+    free_image(D);
+    free_image(gx_filter);
+    free_image(gy_filter);
+    free_image(gx);
+    free_image(gy);
     return S;
 }
 
@@ -125,6 +158,14 @@ image cornerness_response(image S)
     image R = make_image(S.w, S.h, 1);
     // TODO: fill in R, "cornerness" for each pixel using the structure matrix.
     // We'll use formulation det(S) - alpha * trace(S)^2, alpha = .06.
+    int i;
+    float alpha = 0.06;
+    for (i = 0; i < S.w*S.h; ++i){
+      float gxx = S.data[i];
+      float gyy = S.data[i+S.w*S.h];
+      float gxy = S.data[i+2*S.w*S.h];
+      R.data[i] = gxx*gyy - gxy*gxy - alpha * (gxx+gyy) * (gxx+gyy);
+    }
     return R;
 }
 
@@ -140,6 +181,22 @@ image nms_image(image im, int w)
     //     for neighbors within w:
     //         if neighbor response greater than pixel response:
     //             set response to be very low (I use -999999 [why not 0??])
+    int i, j, m, n;
+    for (i = 0; i < im.h; ++i){
+      for (j = 0; j < im.w; ++j){
+        float v = get_pixel(im, j, i, 0);
+        for (m = -w; m < w + 1; ++m){
+          for (n = -w; n < w + 1; ++n){
+            float u = get_pixel(im, j+m, i+n, 0);
+            if (u > v) {
+              set_pixel(r, j, i, 0, -999999);
+              goto suppressed;
+            }
+          }
+        }
+suppressed:;
+      }
+    }
     return r;
 }
 
@@ -161,15 +218,22 @@ descriptor *harris_corner_detector(image im, float sigma, float thresh, int nms,
     // Run NMS on the responses
     image Rnms = nms_image(R, nms);
 
-
     //TODO: count number of responses over threshold
-    int count = 1; // change this
+    int i;
+    int count = 0;
+    for (i = 0; i < Rnms.h*Rnms.w; ++i){
+      if (Rnms.data[i] > thresh) count++;
+    }
 
-    
     *n = count; // <- set *n equal to number of corners in image.
     descriptor *d = calloc(count, sizeof(descriptor));
     //TODO: fill in array *d with descriptors of corners, use describe_index.
-
+    for (i = 0; i < Rnms.h*Rnms.w; ++i){
+      if (Rnms.data[i] > thresh) {
+        *d++ = describe_index(im, i);
+      }
+    }
+    d -= count;
 
     free_image(S);
     free_image(R);

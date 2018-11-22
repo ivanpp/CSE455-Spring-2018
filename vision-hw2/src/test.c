@@ -35,7 +35,7 @@ int same_image(image a, image b){
         return 0;
     }
     for(i = 0; i < a.w*a.h*a.c; ++i){
-        if(!within_eps(a.data[i], b.data[i])) 
+        if(!within_eps(a.data[i], b.data[i]))
         {
             printf("The value should be %f, but it is %f! \n", b.data[i], a.data[i]);
             return 0;
@@ -62,15 +62,15 @@ void test_get_pixel(){
 void test_set_pixel(){
     image gt = load_image("data/dots.png");
     image d = make_image(4,2,3);
-    set_pixel(d, 0,0,0,0); set_pixel(d, 0,0,1,0); set_pixel(d, 0,0,2,0); 
-    set_pixel(d, 1,0,0,1); set_pixel(d, 1,0,1,1); set_pixel(d, 1,0,2,1); 
-    set_pixel(d, 2,0,0,1); set_pixel(d, 2,0,1,0); set_pixel(d, 2,0,2,0); 
-    set_pixel(d, 3,0,0,1); set_pixel(d, 3,0,1,1); set_pixel(d, 3,0,2,0); 
+    set_pixel(d, 0,0,0,0); set_pixel(d, 0,0,1,0); set_pixel(d, 0,0,2,0);
+    set_pixel(d, 1,0,0,1); set_pixel(d, 1,0,1,1); set_pixel(d, 1,0,2,1);
+    set_pixel(d, 2,0,0,1); set_pixel(d, 2,0,1,0); set_pixel(d, 2,0,2,0);
+    set_pixel(d, 3,0,0,1); set_pixel(d, 3,0,1,1); set_pixel(d, 3,0,2,0);
 
-    set_pixel(d, 0,1,0,0); set_pixel(d, 0,1,1,1); set_pixel(d, 0,1,2,0); 
-    set_pixel(d, 1,1,0,0); set_pixel(d, 1,1,1,1); set_pixel(d, 1,1,2,1); 
-    set_pixel(d, 2,1,0,0); set_pixel(d, 2,1,1,0); set_pixel(d, 2,1,2,1); 
-    set_pixel(d, 3,1,0,1); set_pixel(d, 3,1,1,0); set_pixel(d, 3,1,2,1); 
+    set_pixel(d, 0,1,0,0); set_pixel(d, 0,1,1,1); set_pixel(d, 0,1,2,0);
+    set_pixel(d, 1,1,0,0); set_pixel(d, 1,1,1,1); set_pixel(d, 1,1,2,1);
+    set_pixel(d, 2,1,0,0); set_pixel(d, 2,1,1,0); set_pixel(d, 2,1,2,1);
+    set_pixel(d, 3,1,0,1); set_pixel(d, 3,1,1,0); set_pixel(d, 3,1,2,1);
 
     // Test images are same
     TEST(same_image(d, gt));
@@ -194,7 +194,7 @@ void test_highpass_filter(){
     image blur = convolve_image(im, f, 0);
     clamp_image(blur);
 
-    
+
     image gt = load_image("figs/dog-highpass.png");
     TEST(same_image(blur, gt));
     free_image(im);
@@ -209,7 +209,7 @@ void test_emboss_filter(){
     image blur = convolve_image(im, f, 1);
     clamp_image(blur);
 
-    
+
     image gt = load_image("figs/dog-emboss.png");
     TEST(same_image(blur, gt));
     free_image(im);
@@ -256,7 +256,7 @@ void test_gaussian_filter(){
     }
 
     image gt = load_image("figs/gaussian_filter_7.png");
-    TEST(same_image(f, gt));    
+    TEST(same_image(f, gt));
     free_image(f);
     free_image(gt);
 }
@@ -268,7 +268,7 @@ void test_gaussian_blur(){
     clamp_image(blur);
 
     image gt = load_image("figs/dog-gauss2.png");
-    TEST(same_image(blur, gt));    
+    TEST(same_image(blur, gt));
     free_image(im);
     free_image(f);
     free_image(blur);
@@ -320,7 +320,8 @@ void test_frequency_image(){
     free_image(high_freq);
 }
 
-void test_sobel(){
+void test_sobel()
+{
     image im = load_image("data/dog.jpg");
     image *res = sobel_image(im);
     image mag = res[0];
@@ -333,8 +334,8 @@ void test_sobel(){
     TEST(gt_mag.w == mag.w && gt_theta.w == theta.w);
     TEST(gt_mag.h == mag.h && gt_theta.h == theta.h);
     TEST(gt_mag.c == mag.c && gt_theta.c == theta.c);
-    if( gt_mag.w != mag.w || gt_theta.w != theta.w || 
-        gt_mag.h != mag.h || gt_theta.h != theta.h || 
+    if( gt_mag.w != mag.w || gt_theta.w != theta.w ||
+        gt_mag.h != mag.h || gt_theta.h != theta.h ||
         gt_mag.c != mag.c || gt_theta.c != theta.c ) return;
     int i;
     for(i = 0; i < gt_mag.w*gt_mag.h; ++i){
@@ -384,6 +385,48 @@ void test_cornerness()
     free_image(gt);
 }
 
+void field_panorama()
+{
+    image im1 = load_image("data/field1.jpg");
+    image im2 = load_image("data/field2.jpg");
+    image im3 = load_image("data/field3.jpg");
+    image im4 = load_image("data/field4.jpg");
+    image im5 = load_image("data/field5.jpg");
+    image im6 = load_image("data/field6.jpg");
+    image im7 = load_image("data/field7.jpg");
+    image im8 = load_image("data/field8.jpg");
+
+    im1 = cylindrical_project(im1, 1200);
+    im2 = cylindrical_project(im2, 1200);
+    im3 = cylindrical_project(im3, 1200);
+    im4 = cylindrical_project(im4, 1200);
+    im5 = cylindrical_project(im5, 1200);
+    im6 = cylindrical_project(im6, 1200);
+    im7 = cylindrical_project(im7, 1200);
+    im8 = cylindrical_project(im8, 1200);
+
+    image pan1 = panorama_image(im5, im6, 2, 2, 3, 3, 50000, 30);
+    save_image(pan1, "field_panorama_1");
+    image pan2 = panorama_image(pan1, im7, 2, 2, 3, 3, 50000, 30);
+    save_image(pan2, "field_panorama_2");
+    image pan3 = panorama_image(pan2, im8, 2, 2, 3, 3, 50000, 30);
+    save_image(pan3, "field_panorama_3");
+    image pan4 = panorama_image(pan3, im4, 2, 2, 3, 3, 50000, 30);
+    save_image(pan4, "field_panorama_4");
+    image pan5 = panorama_image(pan4, im3, 2, 2, 3, 3, 50000, 30);
+    save_image(pan5, "field_panorama_5");
+    image pan21 = panorama_image(im2, im1, 2, 2, 3, 3, 50000, 30);
+    image pan6 = panorama_image(im3, pan21, 2, 1, 3, 2.8, 50000, 30);
+    save_image(pan6, "field_panorama_6");
+    image final = panorama_image(pan5, pan6, 2, 2, 3, 3, 50000, 30);
+    save_image(final, "field_panorama_all");
+
+    free_image(im1); free_image(im2); free_image(im3); free_image(im4);
+    free_image(im5); free_image(im6); free_image(im7); free_image(im8);
+    free_image(pan1); free_image(pan2); free_image(pan3); free_image(pan4);
+    free_image(pan5); free_image(pan21); free_image(pan6); free_image(final);
+}
+
 void run_tests()
 {
     //test_matrix();
@@ -409,5 +452,5 @@ void run_tests()
     test_structure();
     test_cornerness();
     printf("%d tests, %d passed, %d failed\n", tests_total, tests_total-tests_fail, tests_fail);
+    field_panorama();
 }
-
