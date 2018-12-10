@@ -49,6 +49,8 @@ image rgb_to_grayscale(image im);
 image grayscale_to_rgb(image im, float r, float g, float b);
 void rgb_to_hsv(image im);
 void hsv_to_rgb(image im);
+void rgb_to_hcl(image im);
+void hcl_to_rgb(image im);
 void shift_image(image im, int c, float v);
 void scale_image(image im, int c, float v);
 void clamp_image(image im);
@@ -147,5 +149,8 @@ void free_data(data d);
 data random_batch(data d, int n);
 char *fgetl(FILE *fp);
 
-#endif
+layer make_layer(int input, int output, ACTIVATION activation);
+double accuracy_model(model m, data d);
+void train_model(model m, data d, int batch, int iters, double rate, double momentum, double decay);
 
+#endif
