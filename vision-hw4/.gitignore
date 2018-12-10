@@ -8,6 +8,11 @@ libuwimg*
 uwimg
 *.png
 *.jpg
+*.tar.gz
+*.tgz
+*.train
+*.test
+/cifar
 
 # OS Generated #
 .DS_Store*
